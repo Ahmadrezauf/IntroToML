@@ -3,7 +3,7 @@
 
 # # Support vector machines
 
-# In[17]:
+# In[1]:
 
 
 # import libraries
@@ -54,7 +54,7 @@ df_test_features = pd.read_csv ('test_features.csv')
 
 # We should check for class imbalance.
 
-# In[3]:
+# In[ ]:
 
 
 df_train_labels.hist()
@@ -74,7 +74,7 @@ df_train_labels.hist()
 
 # ### Train Data pre-processing
 
-# In[3]:
+# In[ ]:
 
 
 # data inspection: 
@@ -101,7 +101,7 @@ ax.set_xticklabels(
 #         export_pdf.savefig()
 
 
-# In[4]:
+# In[ ]:
 
 
 # calculate the correlation matrix
@@ -123,7 +123,7 @@ ax.set_xticklabels(
 
 # ### Visualizing pattern of missing values
 
-# In[14]:
+# In[ ]:
 
 
 # how much missing data? 
@@ -138,7 +138,7 @@ msno.heatmap(df_train_features)
 
 # ### Train data pre-processing
 
-# In[6]:
+# In[3]:
 
 
 # Patient by patient pre-processing for imputation and feature generation
@@ -168,7 +168,7 @@ for pid in train_pids:
         df_train_features.loc[df_train_features['pid'] == pid,var] = train_imputed
 
 
-# In[8]:
+# In[4]:
 
 
 # aggregate the time series
@@ -196,17 +196,17 @@ for pid in train_pids:
     i = i +1
 
 
-# In[9]:
+# In[5]:
 
 
 # impute missing data points
 #imp = SimpleImputer(strategy="mean")
-imputer = KNNImputer(n_neighbors=12)
+imputer = KNNImputer(n_neighbors=5)
 df_train_agg_imputed_features = imputer.fit_transform(data_array)
 #print(df_train_agg_imputed_features)
 
 
-# In[10]:
+# In[6]:
 
 
 # scale the data
@@ -216,7 +216,7 @@ min_max_scaler = preprocessing.StandardScaler()
 data_train_scaled = min_max_scaler.fit_transform(df_train_agg_imputed_features)
 
 
-# In[11]:
+# In[7]:
 
 
 # REARRANGE THE LABELS, TO MATCH THE REARRANGED FEATURES
@@ -224,7 +224,7 @@ df_train_labels_sorted = df_train_labels.sort_values(by = 'pid')
 # print(df_train_labels_sorted)
 
 
-# In[12]:
+# In[ ]:
 
 
 # Visualizing the training data after imputing and aggregating
@@ -238,7 +238,7 @@ ax.set_xticklabels(
 );
 
 
-# In[15]:
+# In[ ]:
 
 
 # What is the correlation between the 
@@ -247,7 +247,7 @@ pd.DataFrame(data_train_scaled).corrwith(other = pd.DataFrame(df_train_agg_imput
 
 # ### PCA plot 
 
-# In[18]:
+# In[ ]:
 
 
 pca = PCA(n_components=2)
@@ -277,7 +277,7 @@ ax.grid()
 
 # ### Test Data pre-processing
 
-# In[20]:
+# In[ ]:
 
 
 # data inspection: 
@@ -290,7 +290,7 @@ print("number of missing values:")
 print(df_test_features.isnull().sum(axis=0))
 
 
-# In[33]:
+# In[8]:
 
 
 # # aggregate data for each pid
@@ -302,7 +302,7 @@ print(df_test_features.isnull().sum(axis=0))
 test_pids = list(set(df_test_features.pid))
 
 
-# In[34]:
+# In[9]:
 
 
 # Patient by patient pre-processing for imputation and feature generation
@@ -356,26 +356,25 @@ for pid in test_pids:
     i = i +1
 
 
-# In[36]:
+# In[12]:
 
 
 # # remove time from data frame 
 # df_test_agg_features = df_test_aggregate_features.drop(['Time'], axis = 1)
-print(df_test_agg_features)
-print(data_train_scaled.shape)
+print(df_test_features)
 
 
-# In[38]:
+# In[13]:
 
 
 # impute missing data points
 # should we impute it with the same imputer that we've used for train?
 
-imputer = KNNImputer(n_neighbors=8)
+imputer = KNNImputer(n_neighbors=5)
 df_test_agg_imputed_features = imputer.fit_transform(data_array)
 
 
-# In[41]:
+# In[14]:
 
 
 # scale test data
@@ -387,7 +386,7 @@ data_test_scaled = min_max_scaler.fit_transform(df_test_agg_imputed_features)
 
 # ### predict with support vector machine classification and use probabilities
 
-# In[43]:
+# In[15]:
 
 
 # first for the labels that have an output [0,1]
@@ -395,7 +394,7 @@ data_test_scaled = min_max_scaler.fit_transform(df_test_agg_imputed_features)
 columns_1 = [test_pids]
 
 for i in range(1, 12):
-    clf = SVC(kernel = 'poly', degree = 3, class_weight = 'balanced', verbose = True)
+    clf = SVC(kernel = 'poly', degree = 5, class_weight = 'balanced', verbose = True)
     clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
     # pred = clf.predict(df_test_agg_imputed_features)
     # columns_1.append(pred)
@@ -426,19 +425,22 @@ for i in range(1, 12):
     
 
 
-# In[44]:
+# In[ ]:
 
 
 # labels that have a real value
 columns_2 = []
 
 for i in range(12, 16):
-    clf_w = SVR(kernel = 'poly', degree =3)
-    parameters = {'C':np.linspace(1,10, 5)}
-    clf = model_selection.GridSearchCV(estimator= clf_w, param_grid = parameters, cv = 4,
+    clf_w = SVR()
+    #kernel = 'poly', degree =3
+    parameters = {'C':np.linspace(0.1,10, 20), 'degree':np.linspace(2,7,6), 'kernel':('poly', 'linear', 'rbf', 'sigmoid')}
+    clf = model_selection.GridSearchCV(estimator= clf_w, param_grid = parameters, cv = 10,
                                        refit = True, scoring = 'r2', verbose = 1, n_jobs=6)
     clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
-    pred_train = clf.predict(data_train_scaled)
+    print(clf.cv_results_)
+    
+    pred_train = clf.predict(s)
     tmp = r2_score(y_pred= pred_train, y_true=df_train_labels.iloc[:,i])
     print("R2 for feature", list(df_train_labels)[i] , " : ", tmp)
     
@@ -447,7 +449,7 @@ for i in range(12, 16):
     
 
 
-# In[45]:
+# In[ ]:
 
 
 columns_final = columns_1 + columns_2
@@ -455,63 +457,63 @@ columns_final = columns_1 + columns_2
 
 # ### predict with Support vector regression and then compute sigmoid function
 
-# In[59]:
+# In[ ]:
 
 
 # first for the labels that have an output [0,1]
 
-columns_1 = [test_pids]
+# columns_1 = [test_pids]
 
-for i in range(1,12):
+# for i in range(1,12):
     
-    clf = SVR(kernel = 'poly', degree = 3, max_iter = 10000)
-    clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
-    pred = clf.predict(data_test_scaled)
-    prob = np.empty(len(pred))
-    for j in range(0, len(pred)):
-        prob[j] = 1 / (1 + math.exp(-pred[j]))
-    columns_1.append(prob)
+#     clf = SVR(kernel = 'poly', degree = 3, max_iter = 10000)
+#     clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
+#     pred = clf.predict(data_test_scaled)
+#     prob = np.empty(len(pred))
+#     for j in range(0, len(pred)):
+#         prob[j] = 1 / (1 + math.exp(-pred[j]))
+#     columns_1.append(prob)
     
-    pred_train = clf.predict(data_train_scaled)
-    prob_train = np.empty(len(pred_train))
-    for j in range(0, len(pred_train)):
-        prob_train[j] = 1 / (1 + math.exp(-pred_train[j]))    
-    tmp = roc_auc_score(y_score= prob_train, y_true= df_train_labels.iloc[:,i])
-    print("ROC AUC for feature", list(df_train_labels)[i] , " : ", tmp)
+#     pred_train = clf.predict(data_train_scaled)
+#     prob_train = np.empty(len(pred_train))
+#     for j in range(0, len(pred_train)):
+#         prob_train[j] = 1 / (1 + math.exp(-pred_train[j]))    
+#     tmp = roc_auc_score(y_score= prob_train, y_true= df_train_labels.iloc[:,i])
+#     print("ROC AUC for feature", list(df_train_labels)[i] , " : ", tmp)
 
 
-# In[81]:
+# In[ ]:
 
 
 # labels that have a real value
 
-columns_2 = []
+# columns_2 = []
 
-for i in range(12, 16):
-    clf_w = LinearSVR()
-    parameters = {'C':np.linspace(0.1,10, 20)}
-    clf = model_selection.GridSearchCV(estimator= clf_w, param_grid = parameters, cv = 5,
-                                       refit = True, scoring = 'r2', verbose = 1, n_jobs=6)
+# for i in range(12, 16):
+#     clf_w = LinearSVR()
+#     parameters = {'C':np.linspace(0.1,10, 20)}
+#     clf = model_selection.GridSearchCV(estimator= clf_w, param_grid = parameters, cv = 5,
+#                                        refit = True, scoring = 'r2', verbose = 1, n_jobs=6)
     
-    clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
-    print(clf.cv_results_)
-    pred = clf.predict(data_test_scaled)
-    columns_2.append(pred)
+#     clf.fit(data_train_scaled, df_train_labels.iloc[:,i])
+#     print(clf.cv_results_)
+#     pred = clf.predict(data_test_scaled)
+#     columns_2.append(pred)
     
-    pred_train = clf.predict(data_train_scaled)
-    tmp = r2_score(y_pred= pred_train, y_true=df_train_labels.iloc[:,i])
-    print("R2 for feature", list(df_train_labels)[i] , " : ", tmp)
+#     pred_train = clf.predict(data_train_scaled)
+#     tmp = r2_score(y_pred= pred_train, y_true=df_train_labels.iloc[:,i])
+#     print("R2 for feature", list(df_train_labels)[i] , " : ", tmp)
 
 
-# In[82]:
+# In[ ]:
 
 
-columns_final = columns_1 + columns_2
+#columns_final = columns_1 + columns_2
 
 
 # ## Save predictions
 
-# In[46]:
+# In[ ]:
 
 
 print(np.shape(columns_final))
