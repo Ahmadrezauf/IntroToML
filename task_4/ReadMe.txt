@@ -1,0 +1,1 @@
+2020-05-09, Sebastian: Imported data and researched how to approach this problem, the notebook should be fairly discriptive in the approach that I am considering - feel free to comment on the approach and possible better alternatives. Next steps would be to implement embedding and classify the images according to the reduced dimensionality 
